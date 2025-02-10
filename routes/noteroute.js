@@ -1,57 +1,51 @@
 const express = require('express');
 const router = express.Router();
 const Note = require('../models/note');
-const validate = require('../middlewares/validate');
 const Validate = require('../middlewares/validate');
+const authMiddleware = require("../middlewares/authorize");
 
-router.get('/', async (req, res) => {
-    try{
-        const notes = await Note.find();
+router.get("/", authMiddleware, async (req, res) => {
+    try {
+        const notes = await Note.find({ author: req.user.name });
         res.json(notes);
-    } catch (error){
-        res.status(500).json({message: error.message});
+    } catch (error) {
+        res.status(500).json({ message: "Server Error", error: error.message });
     }
 });
 
-router.get('/:author', async (req, res) => {
-    try{
-        const notes = await Note.find({author: req.params.author});
-        if(notes.length == 0){
-            res.status(404).json({message: 'Note not found for this author'});
-        }
-        res.json(notes);
-    } catch (error){
-        res.status(500).json({message: error.message});
-    }
-});
 
-router.post('/', Validate , async (req, res) => {
-    try{
-        const title = req.body.title;
-        const author = req.body.author;
-        const description = req.body.description;
+router.post("/", authMiddleware, async (req, res) => {
+    try {
+        const { title, description } = req.body;
+
         const newNote = new Note({
             title,
-            author,
-            description
+            description,
+            author: req.user.name 
         });
 
         await newNote.save();
         res.status(201).json(newNote);
-    } catch (error){
-        res.status(400).json({message: error.message});
+    } catch (error) {
+        res.status(400).json({ message: error.message });
     }
 });
 
-router.delete('/:title', async (req, res) => {
-    try{
-        const note = await Note.findOneAndDelete({title: req.params.title});
-        if(!note){
-            res.status(404).json({message: 'Note not found'});
+
+router.delete("/:title", authMiddleware, async (req, res) => {
+    try {
+        const deletedNote = await Note.findOneAndDelete({
+            title: req.params.title,
+            author: req.user.name 
+        });
+
+        if (!deletedNote) {
+            return res.status(403).json({ message: "Unauthorized: You can only delete your own notes." });
         }
-        res.json({message: 'Note deleted successfully'});
-    } catch (error){
-        res.status(500).json({message: error.message});
+
+        res.json({ message: "Note deleted successfully", deletedNote });
+    } catch (error) {
+        res.status(500).json({ message: "Server Error", error });
     }
 });
 
