@@ -60,6 +60,7 @@ npm run dev
 - 🛡️ **Add role-based access (Admin, User)**
 - 📄 **Improve API documentation**
 - 🔐 **Enhance security with refresh tokens**
+- **Interactive User Interface**
 
 ---
 
